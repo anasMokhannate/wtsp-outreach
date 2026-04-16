@@ -9,6 +9,7 @@ const statusStyles: Record<string, string> = {
   SENT: "bg-green-50 text-green-700",
   DELIVERED: "bg-green-50 text-green-700",
   READ: "bg-emerald-50 text-emerald-700",
+  RECEIVED: "bg-blue-50 text-blue-700",
   FAILED: "bg-red-50 text-red-700",
 };
 

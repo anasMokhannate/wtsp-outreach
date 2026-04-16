@@ -84,6 +84,13 @@ export interface Prospect {
 export const prospects = {
   getAll: (): Prospect[] => read<Prospect>("prospects").sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
   getById: (id: string) => read<Prospect>("prospects").find((p) => p.id === id) || null,
+  getByPhone: (phone: string) => {
+    const normalized = phone.replace(/\D/g, "");
+    return read<Prospect>("prospects").find((p) => {
+      const pNorm = p.phoneNumber.replace(/\D/g, "");
+      return pNorm === normalized || normalized.endsWith(pNorm) || pNorm.endsWith(normalized);
+    }) || null;
+  },
   create: (data: { phoneNumber: string; name?: string; email?: string; tags?: string }): Prospect => {
     const all = read<Prospect>("prospects");
     const p: Prospect = { id: cuid(), phoneNumber: data.phoneNumber, name: data.name || null, email: data.email || null, tags: data.tags || null, createdAt: new Date().toISOString() };
@@ -167,6 +174,12 @@ export interface Message {
 export const messages = {
   getAll: (): Message[] => read<Message>("messages"),
   getByCampaign: (campaignId: string): Message[] => read<Message>("messages").filter((m) => m.campaignId === campaignId),
+  getByProspect: (prospectId: string): Message[] =>
+    read<Message>("messages")
+      .filter((m) => m.prospectId === prospectId)
+      .sort((a, b) => (a.sentAt || a.createdAt).localeCompare(b.sentAt || b.createdAt)),
+  getByMetaId: (metaMessageId: string): Message | null =>
+    read<Message>("messages").find((m) => m.metaMessageId === metaMessageId) || null,
   create: (data: Omit<Message, "id" | "createdAt">): Message => {
     const all = read<Message>("messages");
     const m: Message = { ...data, id: cuid(), createdAt: new Date().toISOString() };
@@ -174,6 +187,66 @@ export const messages = {
     write("messages", all);
     return m;
   },
+  updateStatus: (metaMessageId: string, status: string) => {
+    const all = read<Message>("messages");
+    const idx = all.findIndex((m) => m.metaMessageId === metaMessageId);
+    if (idx === -1) return null;
+    all[idx] = { ...all[idx], status };
+    write("messages", all);
+    return all[idx];
+  },
+};
+
+// --- Replies (incoming messages from prospects) ---
+
+export interface Reply {
+  id: string;
+  prospectId: string | null;
+  fromPhone: string;
+  messageText: string | null;
+  mediaType: string | null;
+  metaMessageId: string | null;
+  timestamp: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export const replies = {
+  getAll: (): Reply[] =>
+    read<Reply>("replies").sort(
+      (a, b) => b.timestamp.localeCompare(a.timestamp)
+    ),
+  getByProspect: (prospectId: string): Reply[] =>
+    read<Reply>("replies")
+      .filter((r) => r.prospectId === prospectId)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+  getByPhone: (phone: string): Reply[] =>
+    read<Reply>("replies")
+      .filter((r) => r.fromPhone === phone)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+  create: (
+    data: Omit<Reply, "id" | "createdAt" | "isRead">
+  ): Reply => {
+    const all = read<Reply>("replies");
+    const r: Reply = {
+      ...data,
+      id: cuid(),
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    all.push(r);
+    write("replies", all);
+    return r;
+  },
+  markRead: (ids: string[]) => {
+    const all = read<Reply>("replies");
+    for (const r of all) {
+      if (ids.includes(r.id)) r.isRead = true;
+    }
+    write("replies", all);
+  },
+  countUnread: (): number =>
+    read<Reply>("replies").filter((r) => !r.isRead).length,
 };
 
 // --- Settings ---
@@ -182,12 +255,13 @@ export interface Settings {
   whatsappApiToken: string;
   phoneNumberId: string;
   businessAccountId: string;
+  webhookVerifyToken: string;
 }
 
 export const settings = {
   get: (): Settings => {
     const all = read<Settings>("settings");
-    return all[0] || { whatsappApiToken: "", phoneNumberId: "", businessAccountId: "" };
+    return all[0] || { whatsappApiToken: "", phoneNumberId: "", businessAccountId: "", webhookVerifyToken: "" };
   },
   save: (data: Settings) => {
     write("settings", [data]);

@@ -1,7 +1,8 @@
 [
   {
-    "whatsappApiToken": "EAASNfggJaZA8BRBARaqGTORsflzn08AI2vZCLBpTnEpC1Vc1hp6TJZBYWEDYIxck8mO97E5ZCW1qPDrlt18TcrnZC9nS4fVgcr4ACvjqbd9C8IA5gO7NnminIzQe9AUkMY5octORJmdZAy2icMpqM0BLiWWxCFHIHGWnMhZCcbihq0OyvO1QA2gb3i3fI8bo2FUBXENGLRq2y46JwglTtRMZB9nl5jrWMNTSWjXooLPfSqKzZCvwd8VTsuM34Mx91ANU7m13uGzRWT1uokqIm1oKGSwwgkl2XhamOvqZA1HeEZD",
-    "phoneNumberId": "395161110336237",
-    "businessAccountId": "346570845214460"
+    "whatsappApiToken": "",
+    "phoneNumberId": "",
+    "businessAccountId": "",
+    "webhookVerifyToken": ""
   }
 ]

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { templates, campaigns, prospects, messages } from "@/lib/store";
+import { templates, campaigns, prospects, messages, replies } from "@/lib/store";
 
 export async function GET() {
   const allMessages = messages.getAll();
+  const allReplies = replies.getAll();
 
   const byStatus: Record<string, number> = {};
   for (const m of allMessages) {
@@ -20,6 +21,7 @@ export async function GET() {
     campaigns: campaigns.getAll().length,
     prospects: prospects.getAll().length,
     messages: { total: allMessages.length, byStatus },
+    replies: { total: allReplies.length, unread: replies.countUnread() },
     recentCampaigns,
   });
 }

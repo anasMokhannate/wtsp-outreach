@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   MessageSquareText,
   Megaphone,
   Users,
   Settings,
+  Inbox,
 } from "lucide-react";
 
 const nav = [
@@ -15,11 +17,23 @@ const nav = [
   { href: "/templates", label: "Templates", icon: MessageSquareText },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
   { href: "/prospects", label: "Prospects", icon: Users },
+  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/replies/conversations")
+      .then((r) => r.json())
+      .then((convs: { unreadCount: number }[]) => {
+        const total = convs.reduce((sum: number, c: { unreadCount: number }) => sum + c.unreadCount, 0);
+        setUnreadCount(total);
+      })
+      .catch(() => {});
+  }, [pathname]);
 
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-sidebar-bg flex flex-col h-screen sticky top-0">
@@ -47,7 +61,12 @@ export function Sidebar() {
               }`}
             >
               <Icon className="w-[18px] h-[18px]" />
-              {label}
+              <span className="flex-1">{label}</span>
+              {label === "Inbox" && unreadCount > 0 && (
+                <span className="bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}

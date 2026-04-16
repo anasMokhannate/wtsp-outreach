@@ -8,6 +8,7 @@ import {
   Megaphone,
   Users,
   Send,
+  Inbox,
   TrendingUp,
   ArrowRight,
 } from "lucide-react";
@@ -20,6 +21,10 @@ interface Stats {
   messages: {
     total: number;
     byStatus: Record<string, number>;
+  };
+  replies: {
+    total: number;
+    unread: number;
   };
   recentCampaigns: {
     id: string;
@@ -81,6 +86,13 @@ export default function DashboardPage() {
       color: "bg-orange-50 text-orange-600",
       href: "/campaigns",
     },
+    {
+      label: "Replies",
+      value: stats?.replies?.total ?? 0,
+      icon: Inbox,
+      color: "bg-amber-50 text-amber-600",
+      href: "/inbox",
+    },
   ];
 
   return (
@@ -90,7 +102,7 @@ export default function DashboardPage() {
         description="Overview of your WhatsApp outreach campaigns"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {cards.map((card) => (
           <Link
             key={card.label}
