@@ -164,6 +164,7 @@ export interface Message {
   campaignId: string;
   prospectId: string;
   templateId: string | null;
+  bodyText: string | null;
   status: string;
   metaMessageId: string | null;
   errorMessage: string | null;

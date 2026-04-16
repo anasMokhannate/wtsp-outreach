@@ -58,7 +58,11 @@ export default function InboxPage() {
   const [selectedConv, setSelectedConv] = useState<string | null>(null);
   const [thread, setThread] = useState<ThreadData | null>(null);
   const [threadLoading, setThreadLoading] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchConversations = useCallback(() => {
     fetch("/api/replies/conversations")
@@ -71,10 +75,18 @@ export default function InboxPage() {
     fetchConversations();
   }, [fetchConversations]);
 
+  const refreshThread = async (prospectId: string) => {
+    const res = await fetch(`/api/replies/thread/${prospectId}`);
+    const data = await res.json();
+    setThread(data);
+  };
+
   const openThread = async (conv: Conversation) => {
     if (!conv.prospectId) return;
     setSelectedConv(conv.id);
     setThreadLoading(true);
+    setReplyText("");
+    setSendError(null);
 
     const res = await fetch(`/api/replies/thread/${conv.prospectId}`);
     const data = await res.json();
@@ -83,6 +95,33 @@ export default function InboxPage() {
 
     // Refresh conversations to update unread counts
     fetchConversations();
+  };
+
+  const handleSendReply = async () => {
+    if (!replyText.trim() || !thread?.prospect.id || sending) return;
+
+    setSending(true);
+    setSendError(null);
+
+    const res = await fetch("/api/replies/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prospectId: thread.prospect.id,
+        text: replyText.trim(),
+      }),
+    });
+
+    if (res.ok) {
+      setReplyText("");
+      await refreshThread(thread.prospect.id);
+      inputRef.current?.focus();
+    } else {
+      const data = await res.json();
+      setSendError(data.error || "Failed to send message");
+    }
+
+    setSending(false);
   };
 
   useEffect(() => {
@@ -94,6 +133,8 @@ export default function InboxPage() {
   const goBack = () => {
     setSelectedConv(null);
     setThread(null);
+    setReplyText("");
+    setSendError(null);
     fetchConversations();
   };
 
@@ -211,10 +252,44 @@ export default function InboxPage() {
             <div ref={threadEndRef} />
           </div>
 
-          {/* Info bar */}
-          <div className="px-5 py-3 border-t border-border bg-gray-50 text-center">
-            <p className="text-xs text-muted">
-              Replies are received via webhook. Messages can only be sent through campaigns.
+          {/* Reply input */}
+          <div className="px-4 py-3 border-t border-border bg-gray-50">
+            {sendError && (
+              <div className="mb-2 px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg">
+                {sendError}
+              </div>
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={inputRef}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendReply();
+                  }
+                }}
+                placeholder="Type a message..."
+                rows={1}
+                className="flex-1 resize-none border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent max-h-32"
+                style={{ minHeight: "42px" }}
+              />
+              <button
+                onClick={handleSendReply}
+                disabled={sending || !replyText.trim()}
+                className="bg-accent hover:bg-accent-hover text-white p-2.5 rounded-xl transition-colors disabled:opacity-40 shrink-0"
+                title="Send message"
+              >
+                {sending ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <p className="text-[10px] text-muted mt-1.5 px-1">
+              Press Enter to send, Shift+Enter for new line. Free-form messages require a 24h conversation window.
             </p>
           </div>
         </div>

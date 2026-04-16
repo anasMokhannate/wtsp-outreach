@@ -120,6 +120,36 @@ export async function deleteMetaTemplate(templateName: string) {
   return data;
 }
 
+export async function sendTextMessage(
+  phoneNumber: string,
+  text: string
+) {
+  const settings = getSettings();
+
+  const res = await fetch(
+    `${META_API_BASE}/${settings.phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${settings.whatsappApiToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: phoneNumber,
+        type: "text",
+        text: { body: text },
+      }),
+    }
+  );
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || "Failed to send message");
+  }
+  return data;
+}
+
 export async function sendTemplateMessage(
   phoneNumber: string,
   templateName: string,

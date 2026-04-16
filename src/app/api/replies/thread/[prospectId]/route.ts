@@ -24,7 +24,7 @@ export async function GET(
     return {
       id: m.id,
       type: "sent" as const,
-      text: template ? template.bodyText : "[Template message]",
+      text: m.bodyText || (template ? template.bodyText : "[Template message]"),
       templateName: template?.name || null,
       status: m.status,
       timestamp: m.sentAt || m.createdAt,
