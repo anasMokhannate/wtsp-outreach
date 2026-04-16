@@ -1,0 +1,32 @@
+[
+  {
+    "name": "form_submission",
+    "category": "MARKETING",
+    "language": "en",
+    "headerType": null,
+    "headerText": null,
+    "bodyText": "Hello {{name}}\nThanks for submitting your details on\nFacebook. Would you like me to send you\nsome more details?",
+    "footerText": "flyerBe",
+    "buttons": null,
+    "id": "28cfcf78bbb32edc5be050ba",
+    "metaStatus": "APPROVED",
+    "metaId": "2086529815469868",
+    "createdAt": "2026-04-16T08:34:52.584Z",
+    "updatedAt": "2026-04-16T08:34:52.587Z"
+  },
+  {
+    "name": "hello_world",
+    "category": "UTILITY",
+    "language": "en_US",
+    "headerType": "TEXT",
+    "headerText": "Hello World",
+    "bodyText": "Welcome and congratulations!! This message demonstrates your ability to send a WhatsApp message notification from the Cloud API, hosted by Meta. Thank you for taking the time to test with us.",
+    "footerText": "WhatsApp Business Platform sample message",
+    "buttons": null,
+    "id": "8d491a11df2456c463a3b882",
+    "metaStatus": "APPROVED",
+    "metaId": "1626213151567338",
+    "createdAt": "2026-04-16T08:34:52.588Z",
+    "updatedAt": "2026-04-16T08:34:52.590Z"
+  }
+]

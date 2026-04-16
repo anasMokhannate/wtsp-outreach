@@ -1,0 +1,24 @@
+[
+  {
+    "campaignId": "a92070520c4e883db31e9225",
+    "prospectId": "bd979277a9e460f1b109410e",
+    "templateId": "8d491a11df2456c463a3b882",
+    "status": "FAILED",
+    "metaMessageId": null,
+    "errorMessage": "(#131030) Recipient phone number not in allowed list",
+    "sentAt": null,
+    "id": "2506b20f83321f0b64a786e7",
+    "createdAt": "2026-04-16T08:35:40.783Z"
+  },
+  {
+    "campaignId": "67ba8589272ea18a8449277a",
+    "prospectId": "bd979277a9e460f1b109410e",
+    "templateId": "8d491a11df2456c463a3b882",
+    "status": "SENT",
+    "metaMessageId": "wamid.HBgMMjEyNjMxMzE5NTQwFQIAERgSMTM2QkZGODI3RjUzQ0Y2NDE5AA==",
+    "errorMessage": null,
+    "sentAt": "2026-04-16T08:36:27.591Z",
+    "id": "d1889d85615ff9deea79d1b2",
+    "createdAt": "2026-04-16T08:36:27.592Z"
+  }
+]

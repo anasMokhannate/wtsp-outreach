@@ -1,0 +1,45 @@
+[
+  {
+    "id": "9c1a1a356f431367d3b78b56",
+    "name": "leads",
+    "description": "test campaign",
+    "status": "DRAFT",
+    "templateIds": [],
+    "scheduledAt": null,
+    "launchedAt": null,
+    "completedAt": null,
+    "totalSent": 0,
+    "totalFailed": 0,
+    "createdAt": "2026-04-16T08:32:35.728Z"
+  },
+  {
+    "id": "a92070520c4e883db31e9225",
+    "name": "leaddd",
+    "description": "test",
+    "status": "COMPLETED",
+    "templateIds": [
+      "8d491a11df2456c463a3b882"
+    ],
+    "scheduledAt": null,
+    "launchedAt": "2026-04-16T08:35:40.316Z",
+    "completedAt": "2026-04-16T08:35:40.785Z",
+    "totalSent": 0,
+    "totalFailed": 1,
+    "createdAt": "2026-04-16T08:35:30.394Z"
+  },
+  {
+    "id": "67ba8589272ea18a8449277a",
+    "name": "tessst",
+    "description": "test",
+    "status": "COMPLETED",
+    "templateIds": [
+      "8d491a11df2456c463a3b882"
+    ],
+    "scheduledAt": null,
+    "launchedAt": "2026-04-16T08:36:26.056Z",
+    "completedAt": "2026-04-16T08:36:27.593Z",
+    "totalSent": 1,
+    "totalFailed": 0,
+    "createdAt": "2026-04-16T08:36:18.375Z"
+  }
+]
