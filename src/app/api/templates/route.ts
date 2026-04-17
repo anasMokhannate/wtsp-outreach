@@ -32,7 +32,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(updated, { status: 201 });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Meta sync failed";
-      return NextResponse.json({ ...template, metaSyncError: message }, { status: 201 });
+      // Local template was saved, but Meta sync failed. Return 502 so UI can show the error.
+      return NextResponse.json(
+        { error: `Template saved locally but Meta sync failed: ${message}`, template },
+        { status: 502 }
+      );
     }
   }
 

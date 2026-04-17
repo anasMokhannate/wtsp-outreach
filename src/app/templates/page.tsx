@@ -53,6 +53,7 @@ export default function TemplatesPage() {
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const fetchTemplates = useCallback(() => {
     fetch("/api/templates")
@@ -68,17 +69,26 @@ export default function TemplatesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setFormError(null);
 
     const url = editingId ? `/api/templates/${editingId}` : "/api/templates";
     const method = editingId ? "PUT" : "POST";
 
-    await fetch(url, {
+    const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
+    const data = await res.json();
     setSaving(false);
+
+    if (!res.ok) {
+      setFormError(data.error || "Failed to save template");
+      fetchTemplates();
+      return;
+    }
+
     setShowCreate(false);
     setEditingId(null);
     setForm(defaultForm);
@@ -228,11 +238,18 @@ export default function TemplatesPage() {
           setShowCreate(false);
           setEditingId(null);
           setForm(defaultForm);
+          setFormError(null);
         }}
         title={editingId ? "Edit Template" : "New Template"}
         wide
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs">
+              <p className="font-medium mb-0.5">Error</p>
+              <p>{formError}</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-muted mb-1.5">
@@ -352,6 +369,7 @@ export default function TemplatesPage() {
                 setShowCreate(false);
                 setEditingId(null);
                 setForm(defaultForm);
+                setFormError(null);
               }}
               className="px-4 py-2 text-sm text-muted hover:text-foreground transition-colors"
             >
