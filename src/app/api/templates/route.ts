@@ -8,7 +8,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, category, language, headerType, headerText, bodyText, footerText, buttons, syncToMeta } = body;
+  const { name, category, language, headerType, headerText, headerSamples, bodyText, bodySamples, footerText, buttons, syncToMeta } = body;
 
   if (!name || !bodyText) {
     return NextResponse.json({ error: "Name and body text are required" }, { status: 400 });
@@ -20,7 +20,9 @@ export async function POST(req: NextRequest) {
     language: language || "en_US",
     headerType: headerType || null,
     headerText: headerText || null,
+    headerSamples: Array.isArray(headerSamples) && headerSamples.length > 0 ? headerSamples : null,
     bodyText,
+    bodySamples: Array.isArray(bodySamples) && bodySamples.length > 0 ? bodySamples : null,
     footerText: footerText || null,
     buttons: buttons || null,
   });

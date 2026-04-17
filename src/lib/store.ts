@@ -37,7 +37,9 @@ export interface Template {
   language: string;
   headerType: string | null;
   headerText: string | null;
+  headerSamples: string[] | null;
   bodyText: string;
+  bodySamples: string[] | null;
   footerText: string | null;
   buttons: string | null;
   metaStatus: string;
@@ -51,7 +53,16 @@ export const templates = {
   getById: (id: string) => read<Template>("templates").find((t) => t.id === id) || null,
   create: (data: Omit<Template, "id" | "createdAt" | "updatedAt" | "metaStatus" | "metaId">): Template => {
     const all = read<Template>("templates");
-    const t: Template = { ...data, id: cuid(), metaStatus: "PENDING", metaId: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const t: Template = {
+      ...data,
+      headerSamples: data.headerSamples ?? null,
+      bodySamples: data.bodySamples ?? null,
+      id: cuid(),
+      metaStatus: "PENDING",
+      metaId: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
     all.push(t);
     write("templates", all);
     return t;

@@ -10,6 +10,21 @@ function getSettings() {
 
 const META_API_BASE = "https://graph.facebook.com/v21.0";
 
+function countVars(text: string | null | undefined): number {
+  if (!text) return 0;
+  const nums = new Set<number>();
+  for (const m of text.matchAll(/\{\{(\d+)\}\}/g)) {
+    nums.add(parseInt(m[1], 10));
+  }
+  return nums.size;
+}
+
+function padSamples(samples: string[] | null | undefined, count: number): string[] {
+  const out = (samples || []).slice(0, count).map((s) => s || "sample");
+  while (out.length < count) out.push("sample");
+  return out;
+}
+
 export async function fetchMetaTemplates() {
   const settings = getSettings();
 
@@ -38,7 +53,9 @@ export async function createMetaTemplate(template: {
   language: string;
   headerType?: string | null;
   headerText?: string | null;
+  headerSamples?: string[] | null;
   bodyText: string;
+  bodySamples?: string[] | null;
   footerText?: string | null;
   buttons?: string | null;
 }) {
@@ -46,18 +63,31 @@ export async function createMetaTemplate(template: {
 
   const components: Record<string, unknown>[] = [];
 
+  const headerVarCount = countVars(template.headerText);
+  const bodyVarCount = countVars(template.bodyText);
+
   if (template.headerType && template.headerText) {
-    components.push({
+    const headerComp: Record<string, unknown> = {
       type: "HEADER",
       format: template.headerType,
       text: template.headerText,
-    });
+    };
+    if (headerVarCount > 0) {
+      const samples = padSamples(template.headerSamples, headerVarCount);
+      headerComp.example = { header_text: samples };
+    }
+    components.push(headerComp);
   }
 
-  components.push({
+  const bodyComp: Record<string, unknown> = {
     type: "BODY",
     text: template.bodyText,
-  });
+  };
+  if (bodyVarCount > 0) {
+    const samples = padSamples(template.bodySamples, bodyVarCount);
+    bodyComp.example = { body_text: [samples] };
+  }
+  components.push(bodyComp);
 
   if (template.footerText) {
     components.push({

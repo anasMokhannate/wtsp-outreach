@@ -14,12 +14,22 @@ interface Template {
   language: string;
   headerType: string | null;
   headerText: string | null;
+  headerSamples: string[] | null;
   bodyText: string;
+  bodySamples: string[] | null;
   footerText: string | null;
   buttons: string | null;
   metaStatus: string;
   metaId: string | null;
   createdAt: string;
+}
+
+function extractVarNumbers(text: string): number[] {
+  const nums = new Set<number>();
+  const re = /\{\{(\d+)\}\}/g;
+  let m;
+  while ((m = re.exec(text)) !== null) nums.add(parseInt(m[1], 10));
+  return Array.from(nums).sort((a, b) => a - b);
 }
 
 const categories = ["MARKETING", "UTILITY", "AUTHENTICATION"];
@@ -38,7 +48,9 @@ const defaultForm = {
   language: "en_US",
   headerType: "",
   headerText: "",
+  headerSamples: [] as string[],
   bodyText: "",
+  bodySamples: [] as string[],
   footerText: "",
   buttons: "",
   syncToMeta: true,
@@ -109,7 +121,9 @@ export default function TemplatesPage() {
       language: t.language,
       headerType: t.headerType || "",
       headerText: t.headerText || "",
+      headerSamples: t.headerSamples || [],
       bodyText: t.bodyText,
+      bodySamples: t.bodySamples || [],
       footerText: t.footerText || "",
       buttons: t.buttons || "",
       syncToMeta: false,
@@ -317,9 +331,18 @@ export default function TemplatesPage() {
             <input
               type="text"
               value={form.headerText}
-              onChange={(e) =>
-                setForm({ ...form, headerText: e.target.value, headerType: e.target.value ? "TEXT" : "" })
-              }
+              onChange={(e) => {
+                const v = e.target.value;
+                const count = extractVarNumbers(v).length;
+                const padded = form.headerSamples.slice(0, count);
+                while (padded.length < count) padded.push("");
+                setForm({
+                  ...form,
+                  headerText: v,
+                  headerType: v ? "TEXT" : "",
+                  headerSamples: padded,
+                });
+              }}
               placeholder="Optional header text"
               className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
             />
@@ -333,7 +356,13 @@ export default function TemplatesPage() {
               required
               rows={4}
               value={form.bodyText}
-              onChange={(e) => setForm({ ...form, bodyText: e.target.value })}
+              onChange={(e) => {
+                const v = e.target.value;
+                const count = extractVarNumbers(v).length;
+                const padded = form.bodySamples.slice(0, count);
+                while (padded.length < count) padded.push("");
+                setForm({ ...form, bodyText: v, bodySamples: padded });
+              }}
               placeholder="Hello {{1}}, we'd love to connect with you..."
               className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
             />
@@ -341,6 +370,65 @@ export default function TemplatesPage() {
               Use {"{{1}}"}, {"{{2}}"} etc. for variable placeholders
             </p>
           </div>
+
+          {(form.headerSamples.length > 0 || form.bodySamples.length > 0) && (
+            <div className="border border-border rounded-lg p-3 bg-gray-50 space-y-3">
+              <div>
+                <p className="text-xs font-semibold">Sample Values (for Meta review)</p>
+                <p className="text-[11px] text-muted mt-0.5">
+                  Meta requires an example value for each variable. These are only used during approval, not sent to recipients.
+                </p>
+              </div>
+
+              {form.headerSamples.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Header</p>
+                  {form.headerSamples.map((s, i) => (
+                    <div key={`hs${i}`} className="flex items-center gap-2">
+                      <code className="text-xs bg-gray-200 px-1.5 py-1 rounded shrink-0 font-mono">
+                        {`{{${i + 1}}}`}
+                      </code>
+                      <input
+                        type="text"
+                        value={s}
+                        onChange={(e) => {
+                          const next = [...form.headerSamples];
+                          next[i] = e.target.value;
+                          setForm({ ...form, headerSamples: next });
+                        }}
+                        placeholder="Example value"
+                        className="flex-1 text-xs border border-border rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {form.bodySamples.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Body</p>
+                  {form.bodySamples.map((s, i) => (
+                    <div key={`bs${i}`} className="flex items-center gap-2">
+                      <code className="text-xs bg-gray-200 px-1.5 py-1 rounded shrink-0 font-mono">
+                        {`{{${i + 1}}}`}
+                      </code>
+                      <input
+                        type="text"
+                        value={s}
+                        onChange={(e) => {
+                          const next = [...form.bodySamples];
+                          next[i] = e.target.value;
+                          setForm({ ...form, bodySamples: next });
+                        }}
+                        placeholder="Example value"
+                        className="flex-1 text-xs border border-border rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-muted mb-1.5">
