@@ -76,6 +76,13 @@ export async function createMetaTemplate(template: {
     }
   }
 
+  const requestBody = {
+    name: template.name,
+    category: template.category,
+    language: template.language,
+    components,
+  };
+
   const res = await fetch(
     `${META_API_BASE}/${settings.businessAccountId}/message_templates`,
     {
@@ -84,18 +91,25 @@ export async function createMetaTemplate(template: {
         Authorization: `Bearer ${settings.whatsappApiToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name: template.name,
-        category: template.category,
-        language: template.language,
-        components,
-      }),
+      body: JSON.stringify(requestBody),
     }
   );
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error?.message || "Failed to create template on Meta");
+    const err = data.error || {};
+    console.error("[Meta template create] request:", JSON.stringify(requestBody, null, 2));
+    console.error("[Meta template create] response:", JSON.stringify(data, null, 2));
+    const parts: string[] = [];
+    if (err.code) parts.push(`#${err.code}`);
+    if (err.error_subcode) parts.push(`sub:${err.error_subcode}`);
+    const msg =
+      err.error_user_msg ||
+      err.error_user_title ||
+      err.message ||
+      "Failed to create template on Meta";
+    const prefix = parts.length ? `[${parts.join(" ")}] ` : "";
+    throw new Error(`${prefix}${msg}`);
   }
   return data;
 }

@@ -259,12 +259,20 @@ export default function TemplatesPage() {
                 type="text"
                 required
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    name: e.target.value
+                      .toLowerCase()
+                      .replace(/\s+/g, "_")
+                      .replace(/[^a-z0-9_]/g, ""),
+                  })
+                }
                 placeholder="e.g. welcome_message"
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
               <p className="text-xs text-muted mt-1">
-                Lowercase, underscores only, no spaces
+                Lowercase letters, numbers, and underscores only (auto-formatted)
               </p>
             </div>
             <div>
