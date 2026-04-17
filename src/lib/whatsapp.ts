@@ -153,9 +153,34 @@ export async function sendTextMessage(
 export async function sendTemplateMessage(
   phoneNumber: string,
   templateName: string,
-  language: string
+  language: string,
+  opts?: { headerParams?: string[]; bodyParams?: string[] }
 ) {
   const settings = getSettings();
+
+  const components: Record<string, unknown>[] = [];
+
+  if (opts?.headerParams && opts.headerParams.length > 0) {
+    components.push({
+      type: "header",
+      parameters: opts.headerParams.map((text) => ({ type: "text", text })),
+    });
+  }
+
+  if (opts?.bodyParams && opts.bodyParams.length > 0) {
+    components.push({
+      type: "body",
+      parameters: opts.bodyParams.map((text) => ({ type: "text", text })),
+    });
+  }
+
+  const templatePayload: Record<string, unknown> = {
+    name: templateName,
+    language: { code: language },
+  };
+  if (components.length > 0) {
+    templatePayload.components = components;
+  }
 
   const res = await fetch(
     `${META_API_BASE}/${settings.phoneNumberId}/messages`,
@@ -169,10 +194,7 @@ export async function sendTemplateMessage(
         messaging_product: "whatsapp",
         to: phoneNumber,
         type: "template",
-        template: {
-          name: templateName,
-          language: { code: language },
-        },
+        template: templatePayload,
       }),
     }
   );

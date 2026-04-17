@@ -20,7 +20,14 @@ interface Prospect {
   id: string;
   phoneNumber: string;
   name: string | null;
+  email: string | null;
   tags: string | null;
+}
+
+type VarSource = "static" | "prospect_name" | "prospect_email" | "prospect_phone";
+interface VariableMapping {
+  source: VarSource;
+  value?: string;
 }
 
 interface CampaignMessage {
@@ -35,6 +42,8 @@ interface TemplateItem {
   id: string;
   name: string;
   category: string;
+  headerType: string | null;
+  headerText: string | null;
   bodyText: string;
   language: string;
 }
@@ -66,6 +75,9 @@ export default function CampaignDetailPage() {
   const [selectedProspects, setSelectedProspects] = useState<string[]>([]);
   const [launching, setLaunching] = useState(false);
   const [launchResult, setLaunchResult] = useState<{ sent: number; failed: number } | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const [headerVariables, setHeaderVariables] = useState<Record<number, VariableMapping>>({});
+  const [bodyVariables, setBodyVariables] = useState<Record<number, VariableMapping>>({});
 
   const fetchCampaign = useCallback(() => {
     fetch(`/api/campaigns/${id}`)
@@ -99,14 +111,89 @@ export default function CampaignDetailPage() {
     }
   };
 
+  const firstTemplate = campaign?.templates[0];
+
+  const extractVars = (text: string | null | undefined): number[] => {
+    if (!text) return [];
+    const nums = new Set<number>();
+    const re = /\{\{(\d+)\}\}/g;
+    let m;
+    while ((m = re.exec(text)) !== null) nums.add(parseInt(m[1], 10));
+    return Array.from(nums).sort((a, b) => a - b);
+  };
+
+  const headerVarNums = extractVars(firstTemplate?.headerText);
+  const bodyVarNums = extractVars(firstTemplate?.bodyText);
+  const hasVariables = headerVarNums.length + bodyVarNums.length > 0;
+
+  const resolveMapping = (m: VariableMapping | undefined, p: Prospect): string => {
+    if (!m) return "";
+    switch (m.source) {
+      case "prospect_name":
+        return p.name || "";
+      case "prospect_email":
+        return p.email || "";
+      case "prospect_phone":
+        return p.phoneNumber;
+      default:
+        return m.value || "";
+    }
+  };
+
+  const resolveText = (
+    text: string | null | undefined,
+    mappings: Record<number, VariableMapping>,
+    p: Prospect
+  ): string => {
+    if (!text) return "";
+    return text.replace(/\{\{(\d+)\}\}/g, (_, numStr) => {
+      const n = parseInt(numStr, 10);
+      return resolveMapping(mappings[n], p) || `{{${n}}}`;
+    });
+  };
+
+  const setVarMapping = (
+    which: "header" | "body",
+    num: number,
+    patch: Partial<VariableMapping>
+  ) => {
+    const setter = which === "header" ? setHeaderVariables : setBodyVariables;
+    const current = which === "header" ? headerVariables : bodyVariables;
+    const existing = current[num] || { source: "static", value: "" };
+    setter({ ...current, [num]: { ...existing, ...patch } });
+  };
+
+  const allVariablesMapped = (() => {
+    const hOk = headerVarNums.every((n) => {
+      const m = headerVariables[n];
+      if (!m) return false;
+      return m.source !== "static" || (m.value ?? "").length > 0;
+    });
+    const bOk = bodyVarNums.every((n) => {
+      const m = bodyVariables[n];
+      if (!m) return false;
+      return m.source !== "static" || (m.value ?? "").length > 0;
+    });
+    return hOk && bOk;
+  })();
+
+  const previewProspect = selectedProspects.length > 0
+    ? prospects.find((p) => p.id === selectedProspects[0])
+    : null;
+
   const handleLaunch = async () => {
     setLaunching(true);
     setLaunchResult(null);
+    setLaunchError(null);
 
     const res = await fetch(`/api/campaigns/${id}/launch`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prospectIds: selectedProspects }),
+      body: JSON.stringify({
+        prospectIds: selectedProspects,
+        headerVariables: headerVarNums.length > 0 ? headerVariables : undefined,
+        bodyVariables: bodyVarNums.length > 0 ? bodyVariables : undefined,
+      }),
     });
 
     const data = await res.json();
@@ -116,7 +203,7 @@ export default function CampaignDetailPage() {
       setLaunchResult({ sent: data.totalSent, failed: data.totalFailed });
       fetchCampaign();
     } else {
-      alert(data.error || "Launch failed");
+      setLaunchError(data.error || "Launch failed");
     }
   };
 
@@ -147,6 +234,9 @@ export default function CampaignDetailPage() {
                 setShowLaunch(true);
                 setSelectedProspects([]);
                 setLaunchResult(null);
+                setLaunchError(null);
+                setHeaderVariables({});
+                setBodyVariables({});
               }}
               className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
@@ -362,6 +452,113 @@ export default function CampaignDetailPage() {
               )}
             </div>
 
+            {hasVariables && (
+              <div className="border border-border rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold">Template Variables</p>
+                  <p className="text-[11px] text-muted mt-0.5">
+                    Map each <code className="bg-gray-100 px-1 rounded">{"{{n}}"}</code> in the template to a data source.
+                  </p>
+                </div>
+
+                {headerVarNums.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Header</p>
+                    {headerVarNums.map((n) => {
+                      const m = headerVariables[n];
+                      return (
+                        <div key={`h${n}`} className="flex items-center gap-2">
+                          <code className="text-xs bg-gray-100 px-1.5 py-1 rounded shrink-0 font-mono">{`{{${n}}}`}</code>
+                          <select
+                            value={m?.source || "static"}
+                            onChange={(e) =>
+                              setVarMapping("header", n, { source: e.target.value as VarSource })
+                            }
+                            className="text-xs border border-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                          >
+                            <option value="static">Custom text</option>
+                            <option value="prospect_name">Prospect name</option>
+                            <option value="prospect_email">Prospect email</option>
+                            <option value="prospect_phone">Prospect phone</option>
+                          </select>
+                          {(!m || m.source === "static") && (
+                            <input
+                              type="text"
+                              value={m?.value || ""}
+                              onChange={(e) =>
+                                setVarMapping("header", n, { source: "static", value: e.target.value })
+                              }
+                              placeholder="Enter value"
+                              className="flex-1 text-xs border border-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {bodyVarNums.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Body</p>
+                    {bodyVarNums.map((n) => {
+                      const m = bodyVariables[n];
+                      return (
+                        <div key={`b${n}`} className="flex items-center gap-2">
+                          <code className="text-xs bg-gray-100 px-1.5 py-1 rounded shrink-0 font-mono">{`{{${n}}}`}</code>
+                          <select
+                            value={m?.source || "static"}
+                            onChange={(e) =>
+                              setVarMapping("body", n, { source: e.target.value as VarSource })
+                            }
+                            className="text-xs border border-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                          >
+                            <option value="static">Custom text</option>
+                            <option value="prospect_name">Prospect name</option>
+                            <option value="prospect_email">Prospect email</option>
+                            <option value="prospect_phone">Prospect phone</option>
+                          </select>
+                          {(!m || m.source === "static") && (
+                            <input
+                              type="text"
+                              value={m?.value || ""}
+                              onChange={(e) =>
+                                setVarMapping("body", n, { source: "static", value: e.target.value })
+                              }
+                              placeholder="Enter value"
+                              className="flex-1 text-xs border border-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {previewProspect && firstTemplate && (
+                  <div className="bg-accent-light/40 rounded-lg p-3 mt-2">
+                    <p className="text-[11px] font-medium text-muted uppercase tracking-wider mb-1.5">
+                      Preview (for {previewProspect.name || previewProspect.phoneNumber})
+                    </p>
+                    {firstTemplate.headerText && (
+                      <p className="text-xs font-semibold mb-1">
+                        {resolveText(firstTemplate.headerText, headerVariables, previewProspect)}
+                      </p>
+                    )}
+                    <p className="text-xs whitespace-pre-wrap">
+                      {resolveText(firstTemplate.bodyText, bodyVariables, previewProspect)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {launchError && (
+              <div className="p-3 rounded-lg bg-red-50 text-red-600 text-xs">
+                {launchError}
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
@@ -372,7 +569,7 @@ export default function CampaignDetailPage() {
               </button>
               <button
                 onClick={handleLaunch}
-                disabled={launching || selectedProspects.length === 0}
+                disabled={launching || selectedProspects.length === 0 || (hasVariables && !allVariablesMapped)}
                 className="bg-accent hover:bg-accent-hover text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {launching ? (
